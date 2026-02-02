@@ -3,124 +3,125 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---------------------------
-# Page Config
+# Page Config (UI)
 # ---------------------------
 st.set_page_config(
-    page_title="Sales Analysis Dashboard",
+    page_title="Sales Dashboard",
     page_icon="📊",
-    layout="centered"
+    layout="wide"
 )
 
-st.title("📊 Sales Analysis Dashboard")
-st.caption("Basic analysis using Pandas & Matplotlib")
+st.title("📊 Sales Performance Dashboard")
+st.caption("Sales & Profit analysis using Pandas and Matplotlib")
 
 # ---------------------------
-# File Upload
+# Data Load (unchanged)
 # ---------------------------
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+df = pd.read_csv("data.csv")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+df["Order Date"] = pd.to_datetime(df["Order Date"])
+df["Order_Year"] = df["Order Date"].dt.year
+df["Order_Month"] = df["Order Date"].dt.month
 
-    st.subheader("📄 Raw Data Preview")
-    st.dataframe(df.head())
+# ---------------------------
+# KPI SECTION
+# ---------------------------
+st.subheader("📌 Key Metrics")
 
-    # ---------------------------
-    # Date Processing (same logic)
-    # ---------------------------
-    df["Order Date"] = pd.to_datetime(df["Order Date"])
-    df["Order_Year"] = df["Order Date"].dt.year
-    df["Order_Month"] = df["Order Date"].dt.month
+k1, k2, k3 = st.columns(3)
+k1.metric("Total Sales", f"{df['Sales'].sum():,.0f}")
+k2.metric("Total Profit", f"{df['Profit'].sum():,.0f}")
+k3.metric("Total Orders", df.shape[0])
 
-    # ---------------------------
-    # Group by Category
-    # ---------------------------
-    st.subheader("📦 Category-wise Analysis")
+st.divider()
 
-    sales_cat = df.groupby("Category")
+# ---------------------------
+# CATEGORY ANALYSIS
+# ---------------------------
+st.header("📦 Category Analysis")
 
-    st.text("Total Sales acc to category :")
-    vz_tot_sales = sales_cat["Sales"].sum()
-    st.write(vz_tot_sales)
+sales_cat = df.groupby("Category")
+vz_tot_sales = sales_cat["Sales"].sum()
+vz_tot_profit = sales_cat["Profit"].sum()
 
-    fig1, ax1 = plt.subplots()
-    ax1.bar(vz_tot_sales.index, vz_tot_sales.values)
-    ax1.set_title("Total Sales acc to Category")
+c1, c2 = st.columns(2)
+
+with c1:
+    st.subheader("Sales by Category")
+    fig1 = plt.figure()
+    plt.bar(vz_tot_sales.index, vz_tot_sales.values)
+    plt.xticks(rotation=45)
+    plt.title("Total Sales")
     st.pyplot(fig1)
+    plt.clf()
 
-    st.text("Total Profit acc to category :")
-    vz_tot_profit = sales_cat["Profit"].sum()
-    st.write(vz_tot_profit)
-
-    fig2, ax2 = plt.subplots()
-    ax2.bar(vz_tot_profit.index, vz_tot_profit.values)
-    ax2.set_title("Total Profit acc to Category")
+with c2:
+    st.subheader("Profit by Category")
+    fig2 = plt.figure()
+    plt.bar(vz_tot_profit.index, vz_tot_profit.values)
+    plt.xticks(rotation=45)
+    plt.title("Total Profit")
     st.pyplot(fig2)
+    plt.clf()
 
-    # ---------------------------
-    # Group by Region
-    # ---------------------------
-    st.subheader("🌍 Region-wise Analysis")
+st.divider()
 
-    region_details = df.groupby("Region")
+# ---------------------------
+# REGION ANALYSIS
+# ---------------------------
+st.header("🌍 Regional Performance")
 
-    reg_sales = region_details["Sales"].sum()
-    st.text("Total Sales acc to Region :")
-    st.write(reg_sales)
+region_details = df.groupby("Region")
+reg_sales = region_details["Sales"].sum()
+reg_profit = region_details["Profit"].sum()
 
-    fig3, ax3 = plt.subplots()
-    ax3.barh(reg_sales.index, reg_sales.values)
-    ax3.set_title("Total Sales by Region")
+r1, r2 = st.columns(2)
+
+with r1:
+    st.subheader("Sales by Region")
+    fig3 = plt.figure()
+    plt.barh(reg_sales.index, reg_sales.values)
+    plt.title("Regional Sales")
     st.pyplot(fig3)
+    plt.clf()
 
-    reg_profit = region_details["Profit"].sum()
-    st.text("Total Profit acc to Region :")
-    st.write(reg_profit)
-
-    fig4, ax4 = plt.subplots()
-    ax4.barh(reg_profit.index, reg_profit.values)
-    ax4.set_title("Total Profit acc to Region")
+with r2:
+    st.subheader("Profit by Region")
+    fig4 = plt.figure()
+    plt.barh(reg_profit.index, reg_profit.values)
+    plt.title("Regional Profit")
     st.pyplot(fig4)
+    plt.clf()
 
-    # ---------------------------
-    # Group by Year
-    # ---------------------------
-    st.subheader("📅 Yearly Sales")
+st.divider()
 
-    grp_year = df.groupby("Order_Year")
-    year_sal = grp_year["Sales"].sum()
-    year_sal = year_sal.sort_index()
+# ---------------------------
+# TIME SERIES
+# ---------------------------
+st.header("📈 Time-Based Trends")
 
-    st.write(year_sal)
+grp_year = df.groupby("Order_Year")
+year_sal = grp_year["Sales"].sum().sort_index()
 
-    fig5, ax5 = plt.subplots()
-    ax5.plot(year_sal.index, year_sal.values, marker="o")
-    ax5.set_title("Yearly Sales")
-    ax5.set_xlabel("Year")
-    ax5.set_ylabel("Total Sales")
-    ax5.set_xticks(year_sal.index)
-    ax5.grid(True)
+grp_monthly = df.groupby("Order_Month")
+monthly_sale = grp_monthly["Sales"].sum().sort_index()
+
+t1, t2 = st.columns(2)
+
+with t1:
+    st.subheader("Yearly Sales Trend")
+    fig5 = plt.figure()
+    plt.plot(year_sal.index, year_sal.values, marker="o")
+    plt.xticks(year_sal.index)
+    plt.grid(True)
     st.pyplot(fig5)
+    plt.clf()
 
-    # ---------------------------
-    # Monthly Sales
-    # ---------------------------
-    st.subheader("📆 Monthly Sales")
-
-    grp_monthly = df.groupby("Order_Month")
-    monthly_sale = grp_monthly["Sales"].sum()
-    monthly_sale = monthly_sale.sort_index()
-
-    st.write(monthly_sale)
-
-    fig6, ax6 = plt.subplots()
-    ax6.plot(monthly_sale.index, monthly_sale.values, marker="o")
-    ax6.set_title("Monthly Sales")
-    ax6.set_xlabel("Month")
-    ax6.set_ylabel("Total Sale")
-    ax6.set_xticks(monthly_sale.index)
-    ax6.grid(True)
+with t2:
+    st.subheader("Monthly Sales Trend")
+    fig6 = plt.figure()
+    plt.plot(monthly_sale.index, monthly_sale.values, marker="o")
+    plt.xticks(monthly_sale.index)
+    plt.grid(True)
     st.pyplot(fig6)
-
-else:
-    st.info("👆 Upload a CSV file to start the analysis")
+    plt.clf()
